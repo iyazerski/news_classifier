@@ -2,3 +2,7 @@
 fastapi
 uvicorn
 gunicorn
+
+# static files ant templates
+jinja2
+aiofiles
