@@ -1,0 +1,29 @@
+context:
+  env_file: .env
+  compose: deploy/docker-compose-template.j2
+tasks:
+  build:
+    - title: all
+      pipeline:
+        - "docker compose -f deploy/docker-compose-{ENV}.yml build"
+  up_external:
+    - title: all
+      pipeline:
+        - "docker network create --driver=bridge traefik-public"
+        - "docker network create --driver=bridge mongo-public"
+        - "docker network create --driver=bridge rabbitmq-public"
+        - "docker compose -f deploy/docker-compose.external.yml --env-file .env up -d"
+        - "sleep 10"
+        - "bash deploy/configure_rabbitmq.sh {BROKER_USERNAME} {BROKER_PASSWORD}"
+  up:
+    - title: all
+      pipeline:
+        - "docker compose -f deploy/docker-compose-{ENV}.yml up -d --no-build"
+  down:
+    - title: all
+      pipeline:
+        - "docker compose -f deploy/docker-compose-{ENV}.yml down"
+  down_external:
+    - title: all
+      pipeline:
+        - "docker compose -f deploy/docker-compose.external.yml down"

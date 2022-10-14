@@ -1,0 +1,6 @@
+def classify_one(*_, **__):
+    ...
+
+
+def classify_many(*_, **__):
+    ...

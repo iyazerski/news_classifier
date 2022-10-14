@@ -1,0 +1,44 @@
+db:
+  dialect: mongodb
+  host: localhost
+  port: 27017
+  name: slicker
+  connect_retry:
+    count: 2
+    delay: 10
+broker:
+  host: localhost
+  port: 5672
+  hijack_root_logger: False
+logging:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    simple:
+      format: "%(asctime)s - %(name)s:%(lineno)d - [%(levelname)s] - %(message)s"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: DEBUG
+      formatter: simple
+    file:
+      class: logging.handlers.TimedRotatingFileHandler
+      when: midnight
+      backupCount: 90
+      level: INFO
+      formatter: simple
+      filename: main.log
+  loggers:
+    uvicorn:
+      level: INFO
+      propagate: yes
+      handlers:
+        - file
+  root:
+    level: INFO
+    handlers:
+      - console
+      - file
+path:
+  logs: logs
+  models: models

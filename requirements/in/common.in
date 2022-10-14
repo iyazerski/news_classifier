@@ -1,0 +1,7 @@
+# data
+pydantic
+ruamel.yaml
+pymongo
+
+# task queue
+celery

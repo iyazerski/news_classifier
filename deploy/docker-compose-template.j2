@@ -1,0 +1,107 @@
+# set environment variables
+{% set PROJECT_USER = 'admin' %}
+{% set PROJECT_ROOT = '/home/' ~ PROJECT_USER ~ '/' ~ PROJECT_SLUG %}
+{% set VIRTUAL_ENV = PROJECT_ROOT ~ '/venv' %}
+{% set COMMUNICATOR_REPLICAS_NUM = COMMUNICATOR_REPLICAS_NUM | default(1) | int %}
+{% set WORKER_REPLICAS_NUM = WORKER_REPLICAS_NUM | default(1) | int %}
+{% set COMMUNICATOR_SERVICE_NAME = PROJECT_SLUG ~ '-communicator-' ~ ENV %}
+{% set WORKER_SERVICE_NAME = PROJECT_SLUG ~ '-worker-' ~ ENV %}
+{% set ENABLE_TRAEFIK = ENABLE_TRAEFIK or ENV == 'prod' %}
+{% set HOST = DNS %}
+
+version: "3"
+services:
+  # communicator
+  {{ COMMUNICATOR_SERVICE_NAME }}:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile-communicator
+      args:
+        PROJECT_SLUG: {{ PROJECT_SLUG }}
+        PROJECT_USER: {{ PROJECT_USER }}
+        VIRTUAL_ENV: {{ VIRTUAL_ENV }}
+    image: {{ PROJECT_SLUG }}-communicator:{{ ENV }}
+    container_name: {{ COMMUNICATOR_SERVICE_NAME }}
+    expose:
+      - "{{ PORT }}"
+    restart: always
+    networks:
+      - mongo-public
+      - rabbitmq-public
+      {% if ENABLE_TRAEFIK %}
+      - traefik-public
+    labels:
+      # Enable Traefik for this specific "admin" service
+      - traefik.enable=true
+      # Define the port inside of the Docker service to use
+      - traefik.http.services.{{ COMMUNICATOR_SERVICE_NAME }}.loadbalancer.server.port={{ PORT }}
+      # Make Traefik use this domain in HTTP
+      - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-http.entrypoints=http
+      - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-http.rule=Host(`{{ HOST }}`)
+      # Use the traefik-public network (declared below)
+      - traefik.docker.network=traefik-public
+      # Make Traefik use this domain in HTTPS
+      - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-https.entrypoints=https
+      - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-https.rule=Host(`{{ HOST }}`)
+      - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-https.tls=true
+      # Use the "le" (Let's Encrypt) resolver
+      - traefik.http.routers.{{ ADMIN_SERVICE_NAME }}-https.tls.certresolver=le
+      # https-redirect middleware to redirect HTTP to HTTPS
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      # Middleware to redirect HTTP to HTTPS
+      - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-http.middlewares=https-redirect
+    {% else %}
+    ports:
+      - "{{ PORT }}:{{ PORT }}"
+    {% endif %}
+    command: gunicorn run:server --workers {{ COMMUNICATOR_REPLICAS_NUM }} --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:{{ PORT }}
+    environment:
+      ENV: {{ ENV }}
+      PORT: {{ PORT }}
+      DB_USERNAME: {{ DB_USERNAME }}
+      DB_PASSWORD: {{ DB_PASSWORD }}
+      DB_HOST: mongo
+      BROKER_HOST: rabbitmq
+      BROKER_USERNAME: {{ BROKER_USERNAME }}
+      BROKER_PASSWORD: {{ BROKER_PASSWORD }}
+    volumes:
+      - {{ VOLUMES_ROOT }}/logs/communicator:{{ PROJECT_ROOT }}/logs
+
+  # worker
+  {{ WORKER_SERVICE_NAME }}:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile-worker
+      args:
+        PROJECT_SLUG: {{ PROJECT_SLUG }}
+        PROJECT_USER: {{ PROJECT_USER }}
+        VIRTUAL_ENV: {{ VIRTUAL_ENV }}
+    image: {{ PROJECT_SLUG }}-worker:{{ ENV }}
+    container_name: {{ WORKER_SERVICE_NAME }}
+    restart: always
+    command: celery -A run:app worker -l info -Q classification -c {{ WORKER_REPLICAS_NUM }}
+    environment:
+      ENV: {{ ENV }}
+      DB_USERNAME: {{ DB_USERNAME }}
+      DB_PASSWORD: {{ DB_PASSWORD }}
+      DB_HOST: mongo
+      BROKER_HOST: rabbitmq
+      BROKER_USERNAME: {{ BROKER_USERNAME }}
+      BROKER_PASSWORD: {{ BROKER_PASSWORD }}
+    networks:
+      - mongo-public
+      - rabbitmq-public
+    volumes:
+      - {{ VOLUMES_ROOT }}/logs/worker:{{ PROJECT_ROOT }}/logs
+      - {{ VOLUMES_ROOT }}/models:{{ PROJECT_ROOT }}/models
+
+networks:
+  mongo-public:
+    external: true
+  rabbitmq-public:
+    external: true
+  {% if ENABLE_TRAEFIK %}
+  traefik-public:
+    external: true
+  {% endif %}
