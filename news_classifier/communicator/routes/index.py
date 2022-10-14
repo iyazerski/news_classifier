@@ -10,8 +10,8 @@ router = APIRouter()
 
 
 @router.get('/', include_in_schema=False)
-def index(_: Request) -> RedirectResponse:
-    return RedirectResponse(app.url_for('index.healthcheck'))
+def index(request: Request) -> RedirectResponse:
+    return app.render_template('index.html', request=request)
 
 
 @router.get('/openapi.json', include_in_schema=False)

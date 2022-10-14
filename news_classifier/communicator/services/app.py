@@ -1,6 +1,9 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from starlette.routing import NoMatchFound
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from news_classifier.communicator.configs import Configs
 
@@ -9,6 +12,35 @@ class App:
     def __init__(self, configs: Configs) -> None:
         self.server = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
         self.configs = configs.server
+
+        if self.configs.enable_cors:
+            self.enable_cors()
+
+        # mount templates
+        if configs.common.path and configs.common.path.templates and configs.common.path.templates.exists():
+            self.templates = Jinja2Templates(configs.common.path.templates.as_posix())
+
+        # mount static
+        if configs.common.path and configs.common.path.static and configs.common.path.static.exists():
+            self.server.mount('/static', StaticFiles(directory=configs.common.path.static.as_posix()), name='static')
+
+    def enable_cors(self) -> 'App':
+        """ Enable CORS for all origins, methods and headers. Do not enable CORS on production servers
+
+        Notes
+        -----
+
+        Read more about CORS: https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
+        """
+
+        self.server.add_middleware(
+            CORSMiddleware,
+            allow_origins=['*'],
+            allow_credentials=True,
+            allow_methods=['*'],
+            allow_headers=['*']
+        )
+        return self
 
     def url_for(self, endpoint: str, **kwargs) -> str:
         """ Generate relative URL for `endpoint` """
@@ -26,6 +58,12 @@ class App:
             except NoMatchFound:
                 pass
         raise NoMatchFound(endpoint, kwargs)
+
+    def render_template(self, template: str, request: Request, status_code: int = status.HTTP_200_OK, **kwargs):
+        """ Render specified `template` with data from `kwargs` """
+
+        kwargs.update(request=request, urlfor=self.url_for)
+        return self.templates.TemplateResponse(name=template, context=kwargs, status_code=status_code)
 
     def run(self):
         """ Start `uvicorn` server from code """

@@ -8,12 +8,14 @@ __all__ = ['ServerConfigs', 'Configs']
 class ServerConfigs(BaseModel):
     host: str
     port: int
+    enable_cors: bool
 
     @classmethod
     def from_context(cls, context: Context) -> 'ServerConfigs':
         return cls(
             host=context.yml['server']['host'],
-            port=context.env.get('PORT', default=context.yml['server']['port'], cast=int)
+            port=context.env.get('PORT', default=context.yml['server']['port'], cast=int),
+            enable_cors=context.env.get('ENABLE_CORS', default=context.yml['server']['enable_cors'], cast=bool)
         )
 
 
