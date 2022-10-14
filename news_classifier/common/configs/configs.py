@@ -4,7 +4,7 @@ provided with `Configs` class help.
 
 import logging.config
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 from pydantic import BaseModel, Field, SecretStr
 from ruamel.yaml import YAML
@@ -67,6 +67,19 @@ class ConfigsABC:
 class PathConfigs(BaseModel):
     logs: Path
     models: Path
+    static: Optional[Path]
+    templates: Optional[Path]
+
+    @classmethod
+    def from_context(cls, context: Context) -> 'PathConfigs':
+        obj = cls(
+            logs=Path(context.yml['path']['logs']),
+            models=Path(context.yml['path']['models']),
+            static=Path(f'{context.package_dir}/static'),
+            templates=Path(f'{context.package_dir}/templates')
+        )
+        obj.logs.mkdir(parents=True, exist_ok=True)
+        return obj
 
 
 class BrokerConfigs(BaseModel):
@@ -131,11 +144,7 @@ class Configs(ConfigsABC):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.path = PathConfigs(
-            logs=Path(self.context.yml['path']['logs']),
-            models=Path(self.context.yml['path']['models'])
-        )
-        self.path.logs.mkdir(parents=True, exist_ok=True)
+        self.path = PathConfigs.from_context(self.context)
         self.configure_logging()
 
         self.broker = BrokerConfigs.from_context(self.context)

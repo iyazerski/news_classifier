@@ -33,6 +33,9 @@ class Database:
             else:
                 raise e
 
+        # create indexes
+        self.get_collection('results').create_index('request_id')
+
         return self
 
     def get_collection(self, collection: str):
