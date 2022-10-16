@@ -14,11 +14,11 @@ def on_task_init(*_, **__):
     db.connect()
 
 
-@broker.app.task(name='classify_one', queue='classification')
-def classify_one(**kwargs):
-    classification.classify_one(**kwargs)
+@broker.app.task(name='classify', queue='classification')
+def classify_text(**kwargs):
+    classification.classify(**kwargs)
 
 
-@broker.app.task(name='classify_many', queue='classification')
-def classify_many(**kwargs):
-    classification.classify_many(**kwargs)
+@broker.app.task(name='trigger', queue='classification')
+def trigger_classification(**kwargs):
+    classification.trigger(**kwargs)
