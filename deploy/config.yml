@@ -5,7 +5,7 @@ tasks:
   build:
     - title: all
       pipeline:
-        - "docker compose -f deploy/docker-compose-{ENV}.yml build"
+        - "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose -f deploy/docker-compose-{ENV}.yml build"
   up_external:
     - title: all
       pipeline:
@@ -27,3 +27,13 @@ tasks:
     - title: all
       pipeline:
         - "docker compose -f deploy/docker-compose.external.yml down"
+  deploy:
+    - title: all
+      pipeline:
+        - "mkdir deploy/images"
+        - "docker tag {PROJECT_SLUG}-worker:{ENV} {PROJECT_SLUG}-worker:prod"
+        - "docker tag {PROJECT_SLUG}-communicator:{ENV} {PROJECT_SLUG}-communicator:prod"
+        - "docker save {PROJECT_SLUG}-worker:prod | gzip > deploy/images/{PROJECT_SLUG}_worker.tar.gz"
+        - "docker save {PROJECT_SLUG}-communicator:prod | gzip > deploy/images/{PROJECT_SLUG}_communicator.tar.gz"
+        - "rsync -chavzP --stats deploy/images/* {PROD_SSH}:/data/images/."
+        - "ssh -t {PROD_SSH} 'cd /data/images; docker load < {PROJECT_SLUG}_worker.tar.gz; docker load < {PROJECT_SLUG}_communicator.tar.gz;'"
