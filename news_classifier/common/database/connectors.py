@@ -34,7 +34,8 @@ class Database:
                 raise e
 
         # create indexes
-        self.get_collection('results').create_index('request_id')
+        self.get_collection('classification').create_index('external_id')
+        self.get_collection('predictions').create_index('classification_id')
 
         return self
 
