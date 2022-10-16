@@ -13,6 +13,7 @@ class ClassifyRequest(BaseModel):
     @validator('texts', each_item=True)
     def texts_validator(cls, value):
         assert len(value) >= 100
+        return value
 
 
 class ClassifyResponse(BaseModel):
@@ -21,8 +22,15 @@ class ClassifyResponse(BaseModel):
     request_id: str = Field(default_factory=str(uuid4()))
 
 
-class ClassificationResultResponse(BaseModel):
+class ClassificationResultResponseItem(BaseModel):
     """ Schema for GET /classification response body """
 
-    label: str
-    proba: float
+    class Prediction(BaseModel):
+        label: str
+        proba: float
+
+    text: str
+    predictions: list[Prediction]
+
+
+ClassificationResultResponse = list[ClassificationResultResponseItem]
