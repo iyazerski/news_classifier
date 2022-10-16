@@ -35,7 +35,6 @@ class Database:
 
         # create indexes
         self.get_collection('classification').create_index('external_id')
-        self.get_collection('predictions').create_index('classification_id')
 
         return self
 
