@@ -44,5 +44,6 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY LICENSE *.py *.in ./
 COPY run/communicator.py run.py
 RUN mkdir news_classifier
+COPY news_classifier/*py news_classifier/.
 COPY news_classifier/common news_classifier/common
 COPY news_classifier/communicator news_classifier/communicator
