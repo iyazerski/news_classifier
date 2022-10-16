@@ -41,4 +41,3 @@ logging:
       - file
 path:
   logs: logs
-  models: models

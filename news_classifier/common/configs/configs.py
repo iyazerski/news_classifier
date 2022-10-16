@@ -66,11 +66,10 @@ class ConfigsABC:
 
 class PathConfigs(BaseModel):
     logs: Path
-    models: Path
 
     @classmethod
     def from_context(cls, context: Context) -> 'PathConfigs':
-        obj = cls(logs=Path(context.yml['path']['logs']), models=Path(context.yml['path']['models']))
+        obj = cls(logs=Path(context.yml['path']['logs']))
         obj.logs.mkdir(parents=True, exist_ok=True)
         return obj
 
