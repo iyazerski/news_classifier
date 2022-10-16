@@ -17,12 +17,12 @@ class App:
             self.enable_cors()
 
         # mount templates
-        if configs.common.path and configs.common.path.templates and configs.common.path.templates.exists():
-            self.templates = Jinja2Templates(configs.common.path.templates.as_posix())
+        if configs.path.templates.exists():
+            self.templates = Jinja2Templates(configs.path.templates.as_posix())
 
         # mount static
-        if configs.common.path and configs.common.path.static and configs.common.path.static.exists():
-            self.server.mount('/static', StaticFiles(directory=configs.common.path.static.as_posix()), name='static')
+        if configs.path.static.exists():
+            self.server.mount('/static', StaticFiles(directory=configs.path.static.as_posix()), name='static')
 
     def enable_cors(self) -> 'App':
         """ Enable CORS for all origins, methods and headers. Do not enable CORS on production servers
@@ -80,6 +80,7 @@ class App:
         """ Main application method: connect all exceptions handlers, endpoints and blueprints to app """
 
         from news_classifier.communicator.routes import index, classification
+        from news_classifier.communicator.services import exceptions  # noqa
 
         self.server.include_router(index.router, tags=['index'])
         self.server.include_router(classification.router, prefix='/classification', tags=['classification'])

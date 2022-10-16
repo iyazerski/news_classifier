@@ -4,7 +4,7 @@ provided with `Configs` class help.
 
 import logging.config
 from pathlib import Path
-from typing import Any, Union, Optional
+from typing import Any, Union
 
 from pydantic import BaseModel, Field, SecretStr
 from ruamel.yaml import YAML
@@ -67,17 +67,10 @@ class ConfigsABC:
 class PathConfigs(BaseModel):
     logs: Path
     models: Path
-    static: Optional[Path]
-    templates: Optional[Path]
 
     @classmethod
     def from_context(cls, context: Context) -> 'PathConfigs':
-        obj = cls(
-            logs=Path(context.yml['path']['logs']),
-            models=Path(context.yml['path']['models']),
-            static=Path(f'{context.package_dir}/static'),
-            templates=Path(f'{context.package_dir}/templates')
-        )
+        obj = cls(logs=Path(context.yml['path']['logs']), models=Path(context.yml['path']['models']))
         obj.logs.mkdir(parents=True, exist_ok=True)
         return obj
 

@@ -2,7 +2,7 @@ db:
   dialect: mongodb
   host: localhost
   port: 27017
-  name: slicker
+  name: news_classifier
   connect_retry:
     count: 2
     delay: 10
