@@ -45,7 +45,7 @@ services:
       - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-https.rule=Host(`{{ HOST }}`)
       - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-https.tls=true
       # Use the "le" (Let's Encrypt) resolver
-      - traefik.http.routers.{{ ADMIN_SERVICE_NAME }}-https.tls.certresolver=le
+      - traefik.http.routers.{{ COMMUNICATOR_SERVICE_NAME }}-https.tls.certresolver=le
       # https-redirect middleware to redirect HTTP to HTTPS
       - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
       - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
