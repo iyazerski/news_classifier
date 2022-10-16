@@ -22,12 +22,13 @@ def retrieve_classification_results(request_id: str) -> list[dict]:
 
     # query classification data from db
     classification_record = db.read(collection='classification', query={'external_id': request_id})
+
+    # check queried data
     if not classification_record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    # query predictions related to required classification
-    result = db.read(collection='predictions', query={'classification_id': classification_record['_id']}, many=True)
-    if len(result) < classification_record['texts_num']:
+    elif classification_record.get('predictions') is None:
         raise HTTPException(status_code=status.HTTP_425_TOO_EARLY)
+    elif classification_record['error']:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=classification_record['error'])
 
-    return result
+    return classification_record['predictions']
